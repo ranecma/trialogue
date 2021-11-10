@@ -399,7 +399,6 @@ _.extend(Story.prototype, {
 
 		if (window.location.hash === '' ||
 			!this.restore(window.location.hash.replace('#', ''))) {
-
 			this.show(this.startPassage);
 		}
 	},
@@ -475,28 +474,28 @@ _.extend(Story.prototype, {
 
 		window.passage = passage;
 
-  	var speaker = this.getPassageSpeaker(passage);
+		var speaker = this.getPassageSpeaker(passage);
 
-    var passageElem = $(
-				'<div data-speaker="' + speaker + '" class="chat-passage-wrapper ' + passage.tags.join(' ') + '">' + 
-		  			'<div data-speaker="' + speaker + '" class="chat-passage">' + 
-						passage.render() + 
-					'</div>' +
-				'</div>'
-			);
+		var passageElem = $(
+			'<div data-speaker="' + speaker + '" class="chat-passage-wrapper ' + passage.tags.join(' ') + '">' + 
+			'<div data-speaker="' + speaker + '" class="chat-passage">' + 
+			passage.render() + 
+			'</div>' +
+			'</div>'
+		);
 
 		if (!noHistory) {
 			this.recent.push(passage.id);
 			this.recent_dom.push(passageElem[0]);
-    }
+		}
 
-    /**
+		/**
 		 Add passage element to passage container element
-     **/
+		 **/
 		
 
 		$('#passage')
-      .append(passageElem)
+			.append(passageElem)
 			.fadeIn('slow');
 		
 		this.showUserResponses();
@@ -614,8 +613,10 @@ _.extend(Story.prototype, {
 	
 	pcopy: function() {
 		if (parseInt(window.passage.id,10)){
-      // (I used .remove() here to remove any event handlers, which shouldn't persist.)
-      var removed = $('#passage').children().remove();
+			/* (I used .remove() here to remove any event
+			 * handlers, which shouldn't persist.)
+			 */
+			var removed = $('#passage').children().remove();
 			$('#phistory').append(removed);
 		}
 	},
@@ -732,8 +733,10 @@ _.extend(Story.prototype, {
 
 	showTyping: function (idOrName) {
 		var speaker = this.getPassageSpeaker(this.passage(idOrName));
-		$('#animation-container .chat-passage-wrapper').attr('data-speaker', speaker);
-		$('#animation-container .chat-passage-wrapper .chat-passage').attr('data-speaker', speaker);
+		$('#animation-container .chat-passage-wrapper')
+			.attr('data-speaker', speaker);
+		$('#animation-container .chat-passage-wrapper .chat-passage')
+			.attr('data-speaker', speaker);
 		$('#animation-container').fadeIn('slow');
 		this.scrollChatIntoView();
 	},
