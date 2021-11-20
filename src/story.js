@@ -329,6 +329,16 @@ _.extend(Story.prototype, {
 			}
 		}.bind(this));
 
+		$('#nav-link-save').on('click', function (event) {
+			this.saveToStorage();
+		}.bind(this));
+		$('#nav-link-restore').on('click', function (event) {
+			this.restoreFromStorage();
+		}.bind(this));
+		$('#nav-link-restart').on('click', function (event) {
+			this.restart();
+		}.bind(this));
+
 		// set up passage link handler; don't handle historical links
 
 		$('body').on('click', 'a[data-passage]', function (e) {
@@ -397,8 +407,9 @@ _.extend(Story.prototype, {
 
 		// try to restore based on the window hash if possible	
 
-		if (window.location.hash === '' ||
-			!this.restore(window.location.hash.replace('#', ''))) {
+		if ((window.location.hash === '' ||
+			!this.restore(window.location.hash.replace('#', ''))) &&
+		        !this.restoreFromStorage()) {
 			this.show(this.startPassage);
 		}
 	},
@@ -761,7 +772,7 @@ _.extend(Story.prototype, {
 
 	saveHash: function()
 	{	
-		return LZString.compressToBase64(JSON.stringify({ state: this.state, history: this.history }));
+		return LZString.compressToBase64(JSON.stringify({ state: this.state, history: this.history, recent: this.recent }));
 	},
 
 	/**
@@ -781,6 +792,27 @@ _.extend(Story.prototype, {
 
 		$.event.trigger('save');
 		window.location.hash = this.saveHash();
+	},
+
+	/**
+	 * Tries to save the current state to browser storage.
+
+	 @method saveToStorage
+	 @return {Boolean} whether the save succeeded
+	**/
+
+	saveToStorage: function() {
+		try {
+			var storyFile = window.location.pathname
+				.split('/').pop()
+				.split('.')[0];
+			window.localStorage
+				.setItem('trialogue-' + storyFile + '-save', this.saveHash());
+		} catch(ex) {
+			console.log('Unable to save: ' + ex.message);
+			return(false);
+		}
+		return(true);
 	},
 
 	/**
@@ -804,9 +836,6 @@ _.extend(Story.prototype, {
 		try
 		{
 			var save = JSON.parse(LZString.decompressFromBase64(hash));
-			this.state = save.state;
-			this.history = save.history;
-			this.show(this.history[this.history.length - 1], true);
 		}
 		catch (e)
 		{
@@ -822,6 +851,16 @@ _.extend(Story.prototype, {
 			return false;
 		};
 
+		/* These actions only occur after successful restore,
+		 * i.e., if it failed then we will just leave everything as
+		 * it is.
+		 */
+		this.clearAll();
+		this.state = save.state;
+		this.history = save.history;
+		this.recent = save.recent;
+		this.show(this.recent[0], true);
+
 		/**
 		 Triggered after completing a restore from a hash.
 
@@ -830,6 +869,62 @@ _.extend(Story.prototype, {
 
 		$.event.trigger('restore:after');
 		return true;
+	},
+
+	/* FIXME docstring */
+	clearAll: function() {
+		$('#phistory').empty();
+		$('#precent').empty();
+		$('#passage').empty();
+		if (this.delayedTypingEvent !== null) {
+			clearTimeout(this.delayedTypingEvent);
+			this.delayedTypingEvent = null;
+		}
+		this.hideTyping();
+		if (this.delayedPassageEvent !== null) {
+			clearTimeout(this.delayedPassageEvent);
+			this.delayedPassageEvent = null;
+		}
+		this.state = [];
+		this.history = [];
+		this.recent = [];
+		this.history_dom = [];
+		this.recent_dom = [];
+		this.undoHistory = [];
+		$('#nav-link-undo').css({'visibility': 'hidden'});
+		this.clearUserResponses();
+	},
+
+	/**
+	 Tries to restore the story state from the browser storage.
+
+	 @method restore
+	 @return {Boolean} whether the restore succeeded
+	**/
+
+	restoreFromStorage: function() {
+		try {
+			/* FIXME key name */
+			var storyFile = window.location.pathname
+				.split('/').pop()
+				.split('.')[0];
+			var saveHash = window.localStorage
+				.getItem('trialogue-' + storyFile + '-save');
+			if (saveHash === null) {
+				return(false);
+			}
+			this.restore(saveHash);
+		} catch(ex) {
+			console.log('Unable to restore: ' + ex.message);
+			return(false);
+		}
+		return(true);
+	},
+
+	/* FIXME docstring */
+	restart: function() {
+		this.clearAll();
+		this.show(this.startPassage);
 	}
 });
 
